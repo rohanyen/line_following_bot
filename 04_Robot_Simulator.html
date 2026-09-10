@@ -94,15 +94,8 @@
             },
             zigzag: function(y_percent) {
                 const y = y_percent * canvas.height;
-                let x;
-                
-                if (y_percent < 0.33) {
-                    x = canvas.width / 2 - 100;
-                } else if (y_percent < 0.66) {
-                    x = canvas.width / 2 + 100;
-                } else {
-                    x = canvas.width / 2 - 100;
-                }
+                const offset = Math.sin(y_percent * Math.PI * 2) * 120;
+                const x = canvas.width / 2 + offset;
                 return { x, y };
             }
         };
@@ -149,7 +142,7 @@
             drawDot();
             
             if (isRunning) {
-                progress += 0.005;
+                progress += 0.002; // SLOWED DOWN - was 0.005
                 if (progress > 1) {
                     progress = 0;
                 }

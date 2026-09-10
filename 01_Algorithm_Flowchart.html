@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Line-Following Algorithm Flowchart</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 1000px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #1F4788;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .flowchart {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .flowchart-box {
+            background: #E3F2FD;
+            border: 3px solid #1F4788;
+            border-radius: 10px;
+            padding: 20px 40px;
+            text-align: center;
+            min-width: 250px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .flowchart-box:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(31, 71, 136, 0.3);
+        }
+        
+        .flowchart-box.start, .flowchart-box.end {
+            background: #FF6B35;
+            color: white;
+            border-color: #FF6B35;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .flowchart-box.decision {
+            background: #FFF9C4;
+            border-color: #F57F17;
+            transform: skew(-10deg);
+            min-width: 280px;
+        }
+        
+        .flowchart-box.process {
+            background: #C8E6C9;
+            border-color: #2E7D32;
+        }
+        
+        .flowchart-box.output {
+            background: #FFCCBC;
+            border-color: #E64A19;
+        }
+        
+        .arrow {
+            font-size: 2em;
+            color: #1F4788;
+            animation: bounce 1.5s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .parallel-section {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        
+        .parallel-section .flowchart-box {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .description {
+            background: #F5F5F5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 4px solid #FF6B35;
+        }
+        
+        .description h3 {
+            color: #1F4788;
+            margin-bottom: 10px;
+        }
+        
+        .description p {
+            color: #2C3E50;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: 2px solid;
+        }
+        
+        .legend-color.start { background: #FF6B35; border-color: #FF6B35; }
+        .legend-color.decision { background: #FFF9C4; border-color: #F57F17; }
+        .legend-color.process { background: #C8E6C9; border-color: #2E7D32; }
+        .legend-color.output { background: #FFCCBC; border-color: #E64A19; }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .flowchart-box {
+                min-width: 180px;
+                padding: 15px 30px;
+                font-size: 0.95em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Algorithm Flowchart</h1>
+        <div class="flowchart">
+            <div class="flowchart-box start">START</div>
+            <div class="arrow">⬇</div>
+            
+            <div class="flowchart-box process">Read 5 IR Sensor Values</div>
+            <div class="arrow">⬇</div>
+            
+            <div class="flowchart-box process">Calculate Sensor Readings<br>(Convert to Digital)</div>
+            <div class="arrow">⬇</div>
+            
+            <div class="flowchart-box process">Compute Line Position Error<br>(Deviation from Center)</div>
+            <div class="arrow">⬇</div>
+            
+            <div class="flowchart-box decision">Is Error<br>Within Threshold?</div>
+            <div class="arrow">⬇</div>
+            
+            <div class="parallel-section">
+                <div style="text-align: center;">
+                    <div class="flowchart-box decision">Error<br>LEFT?</div>
+                    <div class="arrow">⬇</div>
+                    <div class="flowchart-box output">Decrease Left<br>Motor Speed</div>
+                </div>
+                <div style="text-align: center;">
+                    <div class="flowchart-box decision">Error<br>RIGHT?</div>
+                    <div class="arrow">⬇</div>
+                    <div class="flowchart-box output">Decrease Right<br>Motor Speed</div>
+                </div>
+                <div style="text-align: center;">
+                    <div class="flowchart-box decision">Centered?</div>
+                    <div class="arrow">⬇</div>
+                    <div class="flowchart-box output">Maintain Equal<br>Motor Speeds</div>
+                </div>
+            </div>
+            
+            <div class="arrow">⬇</div>
+            <div class="flowchart-box process">Apply PID Correction<br>(Smooth Motor Control)</div>
+            <div class="arrow">⬇</div>
+            
+            <div class="flowchart-box process">Send PWM Signals<br>to Motor Drivers</div>
+            <div class="arrow">⬇</div>
+            
+            <div class="flowchart-box process">Motors Adjust Speed<br>& Direction</div>
+            <div class="arrow">⬇</div>
+            
+            <div class="flowchart-box decision">Line Lost?</div>
+            <div class="arrow">⬇</div>
+            
+            <div class="flowchart-box output">Search Algorithm:<br>Scan Left & Right</div>
+            <div class="arrow">⬇</div>
+            
+            <div class="flowchart-box process">Loop Back to<br>Read Sensors</div>
+            <div class="arrow">⬇</div>
+            
+            <div class="flowchart-box start">REPEAT</div>
+        </div>
+        
+        <div class="description">
+            <h3>How It Works:</h3>
+            <p><strong>1. Sensor Input:</strong> 5 IR sensors continuously scan for the black line, sampling ~100 times per second.</p>
+            <p><strong>2. Error Calculation:</strong> The microcontroller compares sensor values to determine if the robot is to the left, right, or centered on the line.</p>
+            <p><strong>3. Decision Logic:</strong> Based on the error, the algorithm adjusts motor speeds to steer the robot back to center.</p>
+            <p><strong>4. PID Control:</strong> Proportional-Integral-Derivative control ensures smooth, optimized corrections without oscillation.</p>
+            <p><strong>5. Error Recovery:</strong> If the line is lost, the robot searches left and right to reacquire it.</p>
+            <p><strong>6. Continuous Loop:</strong> This process repeats continuously, allowing the robot to track the line in real-time.</p>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color start"></div>
+                <span><strong>Start/End</strong> - Program Flow</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color process"></div>
+                <span><strong>Process</strong> - Calculation/Action</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color decision"></div>
+                <span><strong>Decision</strong> - Conditional Check</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color output"></div>
+                <span><strong>Output</strong> - Motor Command</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

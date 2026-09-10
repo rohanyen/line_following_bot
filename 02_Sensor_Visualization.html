@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IR Sensor Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 1200px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #1F4788;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+        
+        .visualization-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .track {
+            width: 100%;
+            max-width: 400px;
+            height: 120px;
+            background: linear-gradient(to right, white 45%, black 45%, black 55%, white 55%);
+            border: 3px solid #333;
+            border-radius: 10px;
+            position: relative;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .robot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 40px;
+            background: #FF6B35;
+            border-radius: 8px;
+            border: 2px solid #E64A19;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            z-index: 10;
+        }
+        
+        .sensors {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 20px;
+        }
+        
+        .sensor {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #E3F2FD;
+            border: 3px solid #1F4788;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .sensor:hover {
+            transform: scale(1.1);
+        }
+        
+        .sensor.active {
+            background: #FF6B35;
+            border-color: #E64A19;
+            color: white;
+            box-shadow: 0 0 15px rgba(255, 107, 53, 0.6);
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #F5F5F5;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #FF6B35;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .control-group label {
+            font-weight: bold;
+            color: #1F4788;
+            font-size: 0.95em;
+        }
+        
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #FF6B35;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #FF6B35;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .slider-value {
+            text-align: center;
+            color: #FF6B35;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+        
+        .btn-primary {
+            background: #1F4788;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #153a63;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(31, 71, 136, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #FF6B35;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #E64A19;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+        }
+        
+        .sensor-data {
+            background: #C8E6C9;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #2E7D32;
+            margin-top: 20px;
+        }
+        
+        .sensor-data h3 {
+            color: #1F4788;
+            margin-bottom: 15px;
+        }
+        
+        .sensor-reading {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .sensor-label {
+            font-weight: bold;
+            color: #2E7D32;
+        }
+        
+        .sensor-bar {
+            width: 100%;
+            height: 20px;
+            background: #fff;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid #2E7D32;
+        }
+        
+        .sensor-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B35, #FFA07A);
+            transition: width 0.2s ease;
+        }
+        
+        .robot-status {
+            background: #FFCCBC;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #E64A19;
+            font-weight: bold;
+            color: #1F4788;
+            margin-top: 15px;
+        }
+        
+        .status-text {
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        
+        .status-value {
+            font-size: 1.3em;
+            color: #FF6B35;
+        }
+        
+        .description {
+            background: #E3F2FD;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #1F4788;
+            grid-column: 1 / -1;
+        }
+        
+        .description h3 {
+            color: #1F4788;
+            margin-bottom: 10px;
+        }
+        
+        .description p {
+            color: #2C3E50;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📡 IR Sensor Visualization</h1>
+        
+        <div class="main-content">
+            <div class="visualization-area">
+                <div>
+                    <h2 style="color: #1F4788; margin-bottom: 10px; text-align: center;">Track View</h2>
+                    <div class="track">
+                        <div class="robot">🤖</div>
+                    </div>
+                    <div class="sensors" id="sensorsDisplay"></div>
+                </div>
+            </div>
+            
+            <div class="visualization-area">
+                <div class="controls">
+                    <h3 style="color: #1F4788; margin-bottom: 15px;">Simulate Robot Position</h3>
+                    
+                    <div class="control-group">
+                        <label>Robot Position (Left ← → Right)</label>
+                        <input type="range" id="positionSlider" min="-100" max="100" value="0">
+                        <div class="slider-value" id="positionValue">CENTER</div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="setPosition(-100)">Far Left</button>
+                        <button class="btn-secondary" onclick="setPosition(0)">Center</button>
+                        <button class="btn-primary" onclick="setPosition(100)">Far Right</button>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="btn-secondary" onclick="simulateAutoMode()">Auto Mode</button>
+                        <button class="btn-primary" onclick="resetSimulation()">Reset</button>
+                    </div>
+                </div>
+                
+                <div class="sensor-data">
+                    <h3>Sensor Readings</h3>
+                    <div id="sensorReadings"></div>
+                    <div class="robot-status">
+                        <div class="status-text">Robot Status:</div>
+                        <div class="status-value" id="robotStatus">CENTERED ✓</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="description">
+                <h3>How It Works:</h3>
+                <p><strong>5 IR Sensors:</strong> Arranged in a line across the robot's front to detect the position of the black line.</p>
+                <p><strong>Detection Logic:</strong> When a sensor is over the black line, it reads as LOW (line detected). When over white surface, it reads as HIGH (no line).</p>
+                <p><strong>Position Detection:</strong> By analyzing which sensors are active, the algorithm determines:</p>
+                <p style="margin-left: 20px;">• <strong>Centered:</strong> Middle sensor active → Move straight</p>
+                <p style="margin-left: 20px;">• <strong>Left Drift:</strong> Left sensors active → Steer right</p>
+                <p style="margin-left: 20px;">• <strong>Right Drift:</strong> Right sensors active → Steer left</p>
+                <p><strong>Real-time Response:</strong> This happens 100 times per second, allowing smooth, responsive steering!</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const positionSlider = document.getElementById('positionSlider');
+        let autoModeActive = false;
+        
+        function createSensors() {
+            const sensorsDisplay = document.getElementById('sensorsDisplay');
+            sensorsDisplay.innerHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                const sensor = document.createElement('div');
+                sensor.className = 'sensor';
+                sensor.id = `sensor-${i}`;
+                sensor.textContent = `S${i}`;
+                sensorsDisplay.appendChild(sensor);
+            }
+        }
+        
+        function updateSensorReadings() {
+            const position = parseInt(positionSlider.value);
+            const sensorsReadings = document.getElementById('sensorReadings');
+            
+            let readings = [0, 0, 0, 0, 0];
+            
+            // Simulate sensor readings based on position
+            if (position < -60) {
+                readings = [100, 100, 20, 0, 0];
+            } else if (position < -30) {
+                readings = [100, 80, 40, 10, 0];
+            } else if (position < -5) {
+                readings = [70, 100, 60, 20, 0];
+            } else if (position < 5) {
+                readings = [30, 80, 100, 80, 30];
+            } else if (position < 30) {
+                readings = [0, 20, 60, 100, 70];
+            } else if (position < 60) {
+                readings = [0, 10, 40, 80, 100];
+            } else {
+                readings = [0, 0, 20, 100, 100];
+            }
+            
+            let html = '';
+            readings.forEach((reading, index) => {
+                html += `
+                    <div class="sensor-reading">
+                        <div class="sensor-label">S${index + 1}</div>
+                        <div class="sensor-bar">
+                            <div class="sensor-fill" style="width: ${reading}%"></div>
+                        </div>
+                        <div style="color: #FF6B35; font-weight: bold; min-width: 40px;">${reading}%</div>
+                    </div>
+                `;
+            });
+            sensorsReadings.innerHTML = html;
+            
+            // Update robot status
+            updateRobotStatus(position);
+        }
+        
+        function updateRobotStatus(position) {
+            const statusElement = document.getElementById('robotStatus');
+            let status = '';
+            
+            if (Math.abs(position) < 10) {
+                status = 'CENTERED ✓';
+            } else if (position < -30) {
+                status = 'DRIFTING LEFT ⬅';
+            } else if (position < 0) {
+                status = 'SLIGHT LEFT ↙';
+            } else if (position > 30) {
+                status = 'DRIFTING RIGHT ➡';
+            } else {
+                status = 'SLIGHT RIGHT ↗';
+            }
+            
+            statusElement.textContent = status;
+        }
+        
+        function updateSensorsDisplay() {
+            const position = parseInt(positionSlider.value);
+            
+            // Determine which sensors are "active" (over the line)
+            for (let i = 1; i <= 5; i++) {
+                const sensor = document.getElementById(`sensor-${i}`);
+                const sensorPos = (i - 1) * 50 - 100; // -100, -50, 0, 50, 100
+                
+                if (Math.abs(position - sensorPos) < 40) {
+                    sensor.classList.add('active');
+                } else {
+                    sensor.classList.remove('active');
+                }
+            }
+        }
+        
+        function updatePositionValue() {
+            const position = parseInt(positionSlider.value);
+            const valueElement = document.getElementById('positionValue');
+            
+            if (Math.abs(position) < 10) {
+                valueElement.textContent = 'CENTER';
+            } else if (position < 0) {
+                valueElement.textContent = `LEFT (${Math.abs(position)})`;
+            } else {
+                valueElement.textContent = `RIGHT (${position})`;
+            }
+        }
+        
+        function setPosition(value) {
+            positionSlider.value = value;
+            updateSensorsDisplay();
+            updateSensorReadings();
+            updatePositionValue();
+            autoModeActive = false;
+        }
+        
+        function simulateAutoMode() {
+            autoModeActive = !autoModeActive;
+            
+            if (autoModeActive) {
+                let position = 0;
+                let direction = 1;
+                
+                const interval = setInterval(() => {
+                    position += direction * 5;
+                    
+                    if (position > 80 || position < -80) {
+                        direction *= -1;
+                    }
+                    
+                    positionSlider.value = position;
+                    updateSensorsDisplay();
+                    updateSensorReadings();
+                    updatePositionValue();
+                    
+                    if (!autoModeActive) {
+                        clearInterval(interval);
+                    }
+                }, 300);
+            }
+        }
+        
+        function resetSimulation() {
+            autoModeActive = false;
+            positionSlider.value = 0;
+            updateSensorsDisplay();
+            updateSensorReadings();
+            updatePositionValue();
+        }
+        
+        // Event listeners
+        positionSlider.addEventListener('input', () => {
+            autoModeActive = false;
+            updateSensorsDisplay();
+            updateSensorReadings();
+            updatePositionValue();
+        });
+        
+        // Initialize
+        createSensors();
+        updateSensorsDisplay();
+        updateSensorReadings();
+        updatePositionValue();
+    </script>
+</body>
+</html>

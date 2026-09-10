@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motor Control & PWM Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 1000px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #1F4788;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .motor-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        
+        .motor-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .motor-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #1F4788;
+        }
+        
+        .motor-visual {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            border: 4px solid #1F4788;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(31, 71, 136, 0.2);
+        }
+        
+        .motor-rotor {
+            width: 100px;
+            height: 100px;
+            background: #1F4788;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2em;
+            font-weight: bold;
+            animation: spin 2s linear infinite;
+        }
+        
+        .motor-rotor.slow {
+            animation: spin 4s linear infinite;
+        }
+        
+        .motor-rotor.fast {
+            animation: spin 0.8s linear infinite;
+        }
+        
+        .motor-rotor.stop {
+            animation: none;
+            background: #ccc;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .motor-info {
+            background: #F5F5F5;
+            padding: 15px;
+            border-radius: 8px;
+            width: 100%;
+            text-align: center;
+            border-left: 4px solid #FF6B35;
+        }
+        
+        .info-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #FF6B35;
+        }
+        
+        .pwm-bar {
+            width: 100%;
+            height: 30px;
+            background: #E0E0E0;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid #1F4788;
+            margin: 10px 0;
+        }
+        
+        .pwm-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B35, #FFA07A);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .controls-section {
+            background: #C8E6C9;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 4px solid #2E7D32;
+            margin-bottom: 30px;
+        }
+        
+        .controls-section h3 {
+            color: #1F4788;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .scenario-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #1F4788;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #153a63;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(31, 71, 136, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #FF6B35;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #E64A19;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+        }
+        
+        .description {
+            background: #E3F2FD;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #1F4788;
+        }
+        
+        .description h3 {
+            color: #1F4788;
+            margin-bottom: 10px;
+        }
+        
+        .description p {
+            color: #2C3E50;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        
+        .scenario-text {
+            background: #FFF9C4;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #F57F17;
+            margin-top: 15px;
+            color: #333;
+            font-weight: 500;
+            text-align: center;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95em;
+        }
+        
+        .legend-box {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: 2px solid;
+        }
+        
+        @media (max-width: 768px) {
+            .motor-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .scenario-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ Motor Control & PWM Animation</h1>
+        
+        <div class="controls-section">
+            <h3>Select Scenario</h3>
+            <div class="scenario-buttons">
+                <button class="btn-primary" onclick="setScenario('straight')">Move Straight</button>
+                <button class="btn-secondary" onclick="setScenario('turnLeft')">Turn Left</button>
+                <button class="btn-primary" onclick="setScenario('turnRight')">Turn Right</button>
+                <button class="btn-secondary" onclick="setScenario('stop')">Stop</button>
+                <button class="btn-primary" onclick="setScenario('curve')">Sharp Curve</button>
+                <button class="btn-secondary" onclick="setScenario('autoDemo')">Auto Demo</button>
+            </div>
+            <div class="scenario-text" id="scenarioText">
+                Select a scenario to see motor control in action
+            </div>
+        </div>
+        
+        <div class="motor-section">
+            <div class="motor-display">
+                <div class="motor-title">LEFT MOTOR</div>
+                <div class="motor-visual">
+                    <div class="motor-rotor" id="leftMotor">
+                        ⚙
+                    </div>
+                </div>
+                <div class="motor-info">
+                    <div class="info-label">PWM Signal</div>
+                    <div class="pwm-bar">
+                        <div class="pwm-fill" id="leftPwmFill" style="width: 50%">50%</div>
+                    </div>
+                    <div class="info-label">RPM</div>
+                    <div class="info-value" id="leftRpm">0</div>
+                </div>
+            </div>
+            
+            <div class="motor-display">
+                <div class="motor-title">RIGHT MOTOR</div>
+                <div class="motor-visual">
+                    <div class="motor-rotor" id="rightMotor">
+                        ⚙
+                    </div>
+                </div>
+                <div class="motor-info">
+                    <div class="info-label">PWM Signal</div>
+                    <div class="pwm-bar">
+                        <div class="pwm-fill" id="rightPwmFill" style="width: 50%">50%</div>
+                    </div>
+                    <div class="info-label">RPM</div>
+                    <div class="info-value" id="rightRpm">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="description">
+            <h3>Understanding Motor Control:</h3>
+            <p><strong>PWM (Pulse Width Modulation):</strong> The microcontroller sends rapid on/off pulses to the motor driver. The ratio of "on" to "off" time controls the motor speed.</p>
+            <p><strong>PID Correction:</strong> Based on sensor input, the algorithm calculates error and adjusts PWM values to:</p>
+            <p style="margin-left: 20px;">• <strong>Move Straight:</strong> Both motors at equal PWM (50% = balanced speed)</p>
+            <p style="margin-left: 20px;">• <strong>Turn Left:</strong> Left motor slower, right motor faster (unbalanced speeds)</p>
+            <p style="margin-left: 20px;">• <strong>Turn Right:</strong> Right motor slower, left motor faster (unbalanced speeds)</p>
+            <p style="margin-left: 20px;">• <strong>Sharp Curve:</strong> One motor much slower or stopped while other runs full speed</p>
+            <p><strong>Closed-loop System:</strong> Sensor readings continuously feed back into the algorithm, allowing real-time PWM adjustments for smooth, responsive steering.</p>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #FF6B35; border-color: #FF6B35;"></div>
+                    <span><strong>100% PWM:</strong> Full Speed</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #FFB74D; border-color: #FFB74D;"></div>
+                    <span><strong>50% PWM:</strong> Half Speed</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #E0E0E0; border-color: #999;"></div>
+                    <span><strong>0% PWM:</strong> Stopped</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #1F4788; border-color: #1F4788;"></div>
+                    <span><strong>Rotor Speed:</strong> Synchronized with PWM</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let autoDemoInterval = null;
+        
+        function updateMotorDisplay(leftPwm, rightPwm, scenario) {
+            const leftMotor = document.getElementById('leftMotor');
+            const rightMotor = document.getElementById('rightMotor');
+            const leftPwmFill = document.getElementById('leftPwmFill');
+            const rightPwmFill = document.getElementById('rightPwmFill');
+            const leftRpm = document.getElementById('leftRpm');
+            const rightRpm = document.getElementById('rightRpm');
+            const scenarioText = document.getElementById('scenarioText');
+            
+            // Update PWM bars
+            leftPwmFill.style.width = leftPwm + '%';
+            leftPwmFill.textContent = leftPwm + '%';
+            rightPwmFill.style.width = rightPwm + '%';
+            rightPwmFill.textContent = rightPwm + '%';
+            
+            // Calculate RPM (0-300 based on PWM)
+            const leftRpmValue = Math.round((leftPwm / 100) * 300);
+            const rightRpmValue = Math.round((rightPwm / 100) * 300);
+            leftRpm.textContent = leftRpmValue;
+            rightRpm.textContent = rightRpmValue;
+            
+            // Update motor rotation
+            if (leftPwm === 0) {
+                leftMotor.classList.add('stop');
+                leftMotor.classList.remove('fast', 'slow');
+            } else if (leftPwm < 40) {
+                leftMotor.classList.add('slow');
+                leftMotor.classList.remove('fast', 'stop');
+            } else if (leftPwm > 70) {
+                leftMotor.classList.add('fast');
+                leftMotor.classList.remove('slow', 'stop');
+            } else {
+                leftMotor.classList.remove('stop', 'fast', 'slow');
+            }
+            
+            if (rightPwm === 0) {
+                rightMotor.classList.add('stop');
+                rightMotor.classList.remove('fast', 'slow');
+            } else if (rightPwm < 40) {
+                rightMotor.classList.add('slow');
+                rightMotor.classList.remove('fast', 'stop');
+            } else if (rightPwm > 70) {
+                rightMotor.classList.add('fast');
+                rightMotor.classList.remove('slow', 'stop');
+            } else {
+                rightMotor.classList.remove('stop', 'fast', 'slow');
+            }
+            
+            // Update scenario text
+            const scenarios = {
+                straight: '➡ STRAIGHT: Both motors at equal speed (50% PWM each)',
+                turnLeft: '⬅ TURN LEFT: Left motor slowed, right motor faster',
+                turnRight: '➡ TURN RIGHT: Right motor slowed, left motor faster',
+                stop: '⏹ STOP: Both motors stopped (0% PWM)',
+                curve: '🔄 SHARP CURVE: Extreme speed difference for tight turn',
+                autoDemo: '🔄 AUTO DEMO: Cycling through all scenarios...'
+            };
+            scenarioText.textContent = scenarios[scenario] || 'Select a scenario';
+        }
+        
+        function setScenario(scenario) {
+            // Clear any running auto demo
+            if (autoDemoInterval) {
+                clearInterval(autoDemoInterval);
+                autoDemoInterval = null;
+            }
+            
+            switch(scenario) {
+                case 'straight':
+                    updateMotorDisplay(50, 50, 'straight');
+                    break;
+                case 'turnLeft':
+                    updateMotorDisplay(30, 80, 'turnLeft');
+                    break;
+                case 'turnRight':
+                    updateMotorDisplay(80, 30, 'turnRight');
+                    break;
+                case 'stop':
+                    updateMotorDisplay(0, 0, 'stop');
+                    break;
+                case 'curve':
+                    updateMotorDisplay(10, 100, 'curve');
+                    break;
+                case 'autoDemo':
+                    runAutoDemo();
+                    break;
+            }
+        }
+        
+        function runAutoDemo() {
+            let step = 0;
+            const scenarios = [
+                { left: 50, right: 50, name: 'straight' },
+                { left: 30, right: 80, name: 'turnLeft' },
+                { left: 50, right: 50, name: 'straight' },
+                { left: 80, right: 30, name: 'turnRight' },
+                { left: 50, right: 50, name: 'straight' },
+                { left: 10, right: 100, name: 'curve' },
+            ];
+            
+            autoDemoInterval = setInterval(() => {
+                const current = scenarios[step % scenarios.length];
+                updateMotorDisplay(current.left, current.right, 'autoDemo');
+                step++;
+            }, 2000);
+        }
+        
+        // Initialize
+        updateMotorDisplay(50, 50, 'initial');
+    </script>
+</body>
+</html>

@@ -42,7 +42,7 @@
         }
         
         button {
-            padding: 10px 20px;
+            padding: 10px 30px;
             font-size: 16px;
             margin: 10px;
             background: #FF6B35;
@@ -50,17 +50,11 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            font-weight: bold;
         }
         
         button:hover {
             background: #E64A19;
-        }
-        
-        .stats {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 16px;
-            color: #333;
         }
     </style>
 </head>
@@ -76,58 +70,43 @@
             <button onclick="changeTrack(1)">CURVES</button>
             <button onclick="changeTrack(2)">ZIGZAG</button>
         </div>
-        
-        <div class="stats">
-            <p id="status">Status: Ready</p>
-            <p id="accuracy">Accuracy: --%</p>
-        </div>
     </div>
 
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         
-        let robot = {
-            x: canvas.width / 2,
-            y: canvas.height - 40,
-            angle: -Math.PI / 2,
-            speed: 3,
-            onLine: 0,
-            samples: 0
-        };
+        let dotPosition = 0;
+        let isRunning = false;
+        let trackType = 0;
         
-        let simulation = {
-            running: false,
-            trackType: 0
-        };
-        
-        function drawStraightLine() {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Black line down the middle
-            ctx.fillStyle = 'black';
-            ctx.fillRect(canvas.width / 2 - 25, 0, 50, canvas.height);
-        }
-        
-        function drawCurvedLine() {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 50;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(canvas.width / 2, 0);
-            
-            for (let y = 0; y < canvas.height; y += 5) {
-                let x = canvas.width / 2 + Math.sin(y / 80) * 150;
-                ctx.lineTo(x, y);
+        const tracks = {
+            straight: function(t) {
+                return {
+                    x: canvas.width / 2,
+                    y: t * canvas.height
+                };
+            },
+            curves: function(t) {
+                const y = t * canvas.height;
+                const x = canvas.width / 2 + Math.sin(t * Math.PI * 4) * 150;
+                return { x, y };
+            },
+            zigzag: function(t) {
+                const y = t * canvas.height;
+                let x;
+                if (t < 0.33) {
+                    x = canvas.width / 2 + (t / 0.33 - 1) * canvas.width * 0.25;
+                } else if (t < 0.66) {
+                    x = canvas.width / 2 - canvas.width * 0.25 + ((t - 0.33) / 0.33) * canvas.width * 0.5;
+                } else {
+                    x = canvas.width / 2 + canvas.width * 0.25 - ((t - 0.66) / 0.34) * canvas.width * 0.25;
+                }
+                return { x, y };
             }
-            ctx.stroke();
-        }
+        };
         
-        function drawZigzagLine() {
+        function drawLine() {
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
@@ -135,141 +114,70 @@
             ctx.lineWidth = 50;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
+            
             ctx.beginPath();
-            ctx.moveTo(canvas.width / 2, 0);
-            ctx.lineTo(canvas.width * 0.25, canvas.height / 3);
-            ctx.lineTo(canvas.width * 0.75, canvas.height * 2 / 3);
-            ctx.lineTo(canvas.width * 0.25, canvas.height);
+            
+            let trackFunc = trackType === 0 ? tracks.straight : 
+                           trackType === 1 ? tracks.curves : 
+                           tracks.zigzag;
+            
+            const pos = trackFunc(0);
+            ctx.moveTo(pos.x, pos.y);
+            
+            for (let t = 0; t <= 1; t += 0.01) {
+                const pos = trackFunc(t);
+                ctx.lineTo(pos.x, pos.y);
+            }
+            
             ctx.stroke();
         }
         
-        function drawTrack() {
-            if (simulation.trackType === 0) drawStraightLine();
-            else if (simulation.trackType === 1) drawCurvedLine();
-            else if (simulation.trackType === 2) drawZigzagLine();
-        }
-        
-        function drawRobot() {
-            ctx.save();
-            ctx.translate(robot.x, robot.y);
-            ctx.rotate(robot.angle + Math.PI / 2);
+        function drawDot() {
+            let trackFunc = trackType === 0 ? tracks.straight : 
+                           trackType === 1 ? tracks.curves : 
+                           tracks.zigzag;
             
-            // Robot body
+            const pos = trackFunc(dotPosition);
+            
             ctx.fillStyle = '#FF6B35';
-            ctx.fillRect(-15, -20, 30, 40);
-            
-            // Front indicator (white dot)
-            ctx.fillStyle = 'white';
             ctx.beginPath();
-            ctx.arc(0, -20, 5, 0, Math.PI * 2);
+            ctx.arc(pos.x, pos.y, 15, 0, Math.PI * 2);
             ctx.fill();
             
-            ctx.restore();
-        }
-        
-        function getSensorReading() {
-            // Get 5 sensor readings in front of robot
-            const sensorDist = 15;
-            const sensors = [];
-            
-            // Sensor positions: left, left-center, center, right-center, right
-            const offsets = [-20, -10, 0, 10, 20];
-            
-            for (let offset of offsets) {
-                const sensorX = robot.x + Math.cos(robot.angle) * sensorDist + Math.sin(robot.angle) * offset;
-                const sensorY = robot.y + Math.sin(robot.angle) * sensorDist - Math.cos(robot.angle) * offset;
-                
-                // Check if sensor is on black line
-                if (sensorX > 0 && sensorX < canvas.width && sensorY > 0 && sensorY < canvas.height) {
-                    const imageData = ctx.getImageData(sensorX, sensorY, 1, 1);
-                    const brightness = (imageData.data[0] + imageData.data[1] + imageData.data[2]) / 3;
-                    sensors.push(brightness < 128 ? 1 : 0); // 1 = black line, 0 = white
-                } else {
-                    sensors.push(0);
-                }
-            }
-            
-            return sensors;
-        }
-        
-        function updateRobot() {
-            const sensors = getSensorReading();
-            
-            // Calculate which direction the line is
-            let linePosition = 0;
-            let detectionCount = 0;
-            
-            for (let i = 0; i < 5; i++) {
-                if (sensors[i] === 1) {
-                    linePosition += (i - 2); // -2 to +2
-                    detectionCount++;
-                }
-            }
-            
-            // Track accuracy
-            if (detectionCount > 0) {
-                robot.onLine++;
-            }
-            robot.samples++;
-            
-            // Simple steering: if line is to the left, turn left. If right, turn right.
-            if (detectionCount > 0) {
-                const lineDirection = linePosition / detectionCount;
-                robot.angle += lineDirection * 0.08; // Steering correction
-            }
-            
-            // Move robot forward
-            robot.x += Math.cos(robot.angle) * robot.speed;
-            robot.y += Math.sin(robot.angle) * robot.speed;
-            
-            // Stop if robot goes off screen
-            if (robot.x < 0 || robot.x > canvas.width || robot.y < 0 || robot.y > canvas.height) {
-                simulation.running = false;
-                document.getElementById('status').textContent = 'Status: Robot went off track!';
-            }
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
+            ctx.fill();
         }
         
         function animate() {
-            // Draw everything
-            drawTrack();
+            drawLine();
+            drawDot();
             
-            if (simulation.running) {
-                updateRobot();
-            }
-            
-            drawRobot();
-            
-            // Update stats
-            if (robot.samples > 0) {
-                const accuracy = Math.round((robot.onLine / robot.samples) * 100);
-                document.getElementById('accuracy').textContent = `Accuracy: ${accuracy}%`;
+            if (isRunning) {
+                dotPosition += 0.003;
+                if (dotPosition > 1) {
+                    dotPosition = 0;
+                }
             }
             
             requestAnimationFrame(animate);
         }
         
         function toggleSimulation() {
-            simulation.running = !simulation.running;
-            document.getElementById('status').textContent = simulation.running ? 'Status: Running...' : 'Status: Paused';
+            isRunning = !isRunning;
         }
         
         function resetSimulation() {
-            simulation.running = false;
-            robot.x = canvas.width / 2;
-            robot.y = canvas.height - 40;
-            robot.angle = -Math.PI / 2;
-            robot.onLine = 0;
-            robot.samples = 0;
-            document.getElementById('status').textContent = 'Status: Ready';
-            document.getElementById('accuracy').textContent = 'Accuracy: --%';
+            isRunning = false;
+            dotPosition = 0;
         }
         
         function changeTrack(type) {
-            simulation.trackType = type;
+            trackType = type;
             resetSimulation();
         }
         
-        // Start animation loop
         animate();
     </script>
 </body>

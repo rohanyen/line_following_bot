@@ -227,20 +227,6 @@
                 height: auto;
             }
         }
-        
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-            }
-            
-            h1 {
-                font-size: 1.8em;
-            }
-            
-            canvas {
-                max-width: 100%;
-            }
-        }
     </style>
 </head>
 <body>
@@ -276,14 +262,8 @@
                 
                 <div class="control-group">
                     <label class="control-label">PID P-Gain</label>
-                    <input type="range" id="pgainSlider" min="0.1" max="1" step="0.1" value="0.5" onchange="updateGain()">
-                    <div class="control-value" id="pgainValue">0.5</div>
-                </div>
-                
-                <div class="control-group">
-                    <label class="control-label">Sensor Sensitivity</label>
-                    <input type="range" id="sensitivitySlider" min="20" max="200" value="100" onchange="updateSensitivity()">
-                    <div class="control-value" id="sensitivityValue">100%</div>
+                    <input type="range" id="pgainSlider" min="0.1" max="2" step="0.1" value="0.8" onchange="updateGain()">
+                    <div class="control-value" id="pgainValue">0.8</div>
                 </div>
                 
                 <button class="btn-primary" style="width: 100%;" onclick="toggleSimulation()">Start Simulation</button>
@@ -307,15 +287,11 @@
         </div>
         
         <div class="description">
-            <h3>Robot Simulator Features:</h3>
+            <h3>Robot Simulator - Watch It Follow the Line!</h3>
             <p><strong>Multiple Track Patterns:</strong> Test the robot on straight lines, smooth curves, zigzag patterns, and complex shapes to see how it handles different scenarios.</p>
-            <p><strong>Real-time Visualization:</strong> Watch the robot follow the line with visual feedback showing sensor detection and motor adjustments.</p>
-            <p><strong>Adjustable Parameters:</strong>
-                - <strong>Speed:</strong> Control how fast the robot moves (lower = slower, higher = faster)
-                - <strong>PID P-Gain:</strong> Adjust responsiveness (lower = smoother, higher = sharper corrections)
-                - <strong>Sensor Sensitivity:</strong> Change how easily sensors detect the line
-            </p>
-            <p><strong>Performance Metrics:</strong> Track distance traveled and line-following accuracy in real-time. Higher accuracy means better performance!</p>
+            <p><strong>Real-time Line Following:</strong> Watch the orange robot autonomously follow the black line. The algorithm reads 5 virtual sensors and adjusts motor speeds to stay on track.</p>
+            <p><strong>Adjustable Parameters:</strong> Speed (how fast it moves), PID P-Gain (how sharp its turns are). Watch how changing these affects performance!</p>
+            <p><strong>Performance Metrics:</strong> Distance shows how far the robot traveled. Accuracy shows what percentage of time it was actually on the line.</p>
         </div>
     </div>
     
@@ -323,29 +299,24 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         
-        // Robot state
         let robot = {
             x: canvas.width / 2,
             y: canvas.height - 50,
             angle: -Math.PI / 2,
-            leftSpeed: 0,
-            rightSpeed: 0,
-            distance: 0,
-            onLine: 0,
-            totalSamples: 0
+            width: 20,
+            height: 15,
+            distance: 0
         };
         
         let simulation = {
             running: false,
             trackType: 0,
             speed: 5,
-            pGain: 0.5,
-            sensitivity: 100,
-            distanceTraveled: 0,
-            accuracyHits: 0
+            pGain: 0.8,
+            accuracyHits: 0,
+            totalSamples: 0
         };
         
-        // Track patterns
         const tracks = [
             { name: 'Straight', draw: drawStraightTrack },
             { name: 'Curves', draw: drawCurvedTrack },
@@ -356,55 +327,47 @@
         function drawStraightTrack() {
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Black line down the middle
             ctx.fillStyle = 'black';
-            ctx.fillRect(canvas.width / 2 - 15, 0, 30, canvas.height);
+            ctx.fillRect(canvas.width / 2 - 20, 0, 40, canvas.height);
         }
         
         function drawCurvedTrack() {
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.fillStyle = 'black';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 40;
+            ctx.lineCap = 'round';
             ctx.beginPath();
             ctx.moveTo(canvas.width / 2, 0);
-            
-            for (let y = 0; y < canvas.height; y += 5) {
-                const x = canvas.width / 2 + Math.sin(y / 50) * 80;
+            for (let y = 0; y < canvas.height; y += 2) {
+                const x = canvas.width / 2 + Math.sin(y / 40) * 80;
                 ctx.lineTo(x, y);
             }
-            ctx.lineWidth = 30;
             ctx.stroke();
         }
         
         function drawZigzagTrack() {
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.fillStyle = 'black';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 40;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
             ctx.beginPath();
-            let leftSide = true;
-            
-            for (let y = 0; y < canvas.height; y += canvas.height / 4) {
-                if (leftSide) {
-                    ctx.fillRect(canvas.width * 0.2, y, 30, canvas.height / 4);
-                } else {
-                    ctx.fillRect(canvas.width * 0.7, y, 30, canvas.height / 4);
-                }
-                leftSide = !leftSide;
-            }
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width * 0.25, canvas.height / 3);
+            ctx.lineTo(canvas.width * 0.75, canvas.height * 0.66);
+            ctx.lineTo(canvas.width * 0.25, canvas.height);
+            ctx.stroke();
         }
         
         function drawComplexTrack() {
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.fillStyle = 'black';
             ctx.strokeStyle = 'black';
-            ctx.lineWidth = 30;
+            ctx.lineWidth = 40;
             ctx.lineCap = 'round';
-            
+            ctx.lineJoin = 'round';
             ctx.beginPath();
             ctx.moveTo(canvas.width / 2, 0);
             ctx.quadraticCurveTo(canvas.width * 0.3, canvas.height * 0.25, canvas.width * 0.2, canvas.height * 0.4);
@@ -418,76 +381,80 @@
         }
         
         function drawRobot() {
-            const size = 20;
-            
             ctx.save();
             ctx.translate(robot.x, robot.y);
             ctx.rotate(robot.angle + Math.PI / 2);
-            
-            // Robot body
             ctx.fillStyle = '#FF6B35';
-            ctx.fillRect(-size / 2, -size, size, size * 2);
-            
-            // Direction indicator
+            ctx.fillRect(-robot.width / 2, -robot.height, robot.width, robot.height * 2);
             ctx.fillStyle = '#FFF';
             ctx.beginPath();
-            ctx.arc(0, -size + 5, 4, 0, Math.PI * 2);
+            ctx.arc(0, -robot.height + 5, 4, 0, Math.PI * 2);
             ctx.fill();
-            
             ctx.restore();
         }
         
         function getSensorReadings() {
-            const sensorDistance = 15;
+            const sensorDistance = 12;
+            const sensorSpacing = 8;
             const readings = [];
             
             for (let i = -2; i <= 2; i++) {
-                const angle = robot.angle + (i * Math.PI / 6);
-                const sx = robot.x + Math.cos(angle) * sensorDistance;
-                const sy = robot.y + Math.sin(angle) * sensorDistance;
+                const angle = robot.angle;
+                const sensorX = robot.x + Math.cos(angle) * sensorDistance + Math.sin(angle) * i * sensorSpacing;
+                const sensorY = robot.y + Math.sin(angle) * sensorDistance - Math.cos(angle) * i * sensorSpacing;
                 
-                const imageData = ctx.getImageData(sx, sy, 1, 1);
+                if (sensorX < 0 || sensorX >= canvas.width || sensorY < 0 || sensorY >= canvas.height) {
+                    readings.push(0);
+                    continue;
+                }
+                
+                const imageData = ctx.getImageData(sensorX, sensorY, 1, 1);
                 const brightness = (imageData.data[0] + imageData.data[1] + imageData.data[2]) / 3;
-                
                 readings.push(brightness < 128 ? 1 : 0);
             }
-            
             return readings;
         }
         
         function updateRobotPosition() {
             const readings = getSensorReadings();
             
-            // Calculate error
-            let error = 0;
+            let linePosition = 0;
+            let lineDetected = 0;
+            
             for (let i = 0; i < 5; i++) {
-                error += (i - 2) * readings[i];
+                if (readings[i] === 1) {
+                    linePosition += (i - 2);
+                    lineDetected++;
+                }
             }
             
-            error = error * (simulation.sensitivity / 100);
-            
-            // PID control
-            const correction = error * simulation.pGain;
-            
-            robot.leftSpeed = (5 - correction) * simulation.speed / 10;
-            robot.rightSpeed = (5 + correction) * simulation.speed / 10;
-            
-            // Move robot
-            const avgSpeed = (robot.leftSpeed + robot.rightSpeed) / 2;
-            const angularVelocity = (robot.rightSpeed - robot.leftSpeed) * 0.02;
-            
-            robot.x += Math.cos(robot.angle) * avgSpeed;
-            robot.y += Math.sin(robot.angle) * avgSpeed;
-            robot.angle += angularVelocity;
-            
-            robot.distance += avgSpeed;
-            simulation.distanceTraveled += avgSpeed;
-            
-            // Check accuracy
-            if (readings.some(r => r === 1)) {
+            if (lineDetected > 0) {
                 simulation.accuracyHits++;
             }
-            robot.totalSamples++;
+            simulation.totalSamples++;
+            
+            let error = 0;
+            if (lineDetected > 0) {
+                error = linePosition / lineDetected;
+            }
+            
+            const correction = error * simulation.pGain;
+            const baseSpeed = simulation.speed / 2;
+            
+            let leftSpeed = baseSpeed - correction;
+            let rightSpeed = baseSpeed + correction;
+            
+            leftSpeed = Math.max(0, Math.min(10, leftSpeed));
+            rightSpeed = Math.max(0, Math.min(10, rightSpeed));
+            
+            const avgSpeed = (leftSpeed + rightSpeed) / 2;
+            robot.x += Math.cos(robot.angle) * avgSpeed * 0.5;
+            robot.y += Math.sin(robot.angle) * avgSpeed * 0.5;
+            
+            const angularVelocity = (rightSpeed - leftSpeed) * 0.05;
+            robot.angle += angularVelocity;
+            
+            robot.distance += avgSpeed * 0.5;
         }
         
         function animate() {
@@ -496,7 +463,6 @@
             if (simulation.running) {
                 updateRobotPosition();
                 
-                // Check boundaries
                 if (robot.x < 0 || robot.x > canvas.width || robot.y < 0 || robot.y > canvas.height) {
                     toggleSimulation();
                     document.getElementById('trackInfo').textContent = 'Robot went off track!';
@@ -505,15 +471,14 @@
             
             drawRobot();
             updateStats();
-            
             requestAnimationFrame(animate);
         }
         
         function updateStats() {
             document.getElementById('distance').textContent = Math.round(robot.distance) + ' px';
             
-            if (robot.totalSamples > 0) {
-                const accuracy = Math.round((simulation.accuracyHits / robot.totalSamples) * 100);
+            if (simulation.totalSamples > 0) {
+                const accuracy = Math.round((simulation.accuracyHits / simulation.totalSamples) * 100);
                 document.getElementById('accuracy').textContent = accuracy + '%';
             }
             
@@ -522,7 +487,8 @@
         
         function toggleSimulation() {
             simulation.running = !simulation.running;
-            document.querySelector('button').textContent = simulation.running ? 'Pause' : 'Resume';
+            const btn = document.querySelector('button[onclick="toggleSimulation()"]');
+            btn.textContent = simulation.running ? 'Pause' : 'Resume';
         }
         
         function resetSimulation() {
@@ -533,7 +499,7 @@
             robot.distance = 0;
             robot.totalSamples = 0;
             simulation.accuracyHits = 0;
-            document.querySelector('button').textContent = 'Start Simulation';
+            document.querySelector('button[onclick="toggleSimulation()"]').textContent = 'Start Simulation';
             document.getElementById('trackInfo').textContent = 'Ready to simulate. Press "Start Simulation" to begin!';
         }
         
@@ -552,12 +518,6 @@
             document.getElementById('pgainValue').textContent = simulation.pGain.toFixed(1);
         }
         
-        function updateSensitivity() {
-            simulation.sensitivity = document.getElementById('sensitivitySlider').value;
-            document.getElementById('sensitivityValue').textContent = simulation.sensitivity + '%';
-        }
-        
-        // Initialize
         drawTrack();
         animate();
     </script>

@@ -66,9 +66,9 @@
         <div class="controls">
             <button onclick="toggleSimulation()">START</button>
             <button onclick="resetSimulation()">RESET</button>
-            <button onclick="changeTrack(0)">STRAIGHT</button>
-            <button onclick="changeTrack(1)">CURVES</button>
-            <button onclick="changeTrack(2)">ZIGZAG</button>
+            <button onclick="setupTrack('straight')">STRAIGHT</button>
+            <button onclick="setupTrack('curves')">CURVES</button>
+            <button onclick="setupTrack('zigzag')">ZIGZAG</button>
         </div>
     </div>
 
@@ -76,37 +76,38 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         
-        let dotPosition = 0;
+        let progress = 0;
         let isRunning = false;
-        let trackType = 0;
+        let currentTrack = 'straight';
         
-        const tracks = {
-            straight: function(t) {
+        const paths = {
+            straight: function(y_percent) {
                 return {
                     x: canvas.width / 2,
-                    y: t * canvas.height
+                    y: y_percent * canvas.height
                 };
             },
-            curves: function(t) {
-                const y = t * canvas.height;
-                const x = canvas.width / 2 + Math.sin(t * Math.PI * 4) * 150;
+            curves: function(y_percent) {
+                const y = y_percent * canvas.height;
+                const x = canvas.width / 2 + Math.sin(y_percent * Math.PI * 3) * 100;
                 return { x, y };
             },
-            zigzag: function(t) {
-                const y = t * canvas.height;
+            zigzag: function(y_percent) {
+                const y = y_percent * canvas.height;
                 let x;
-                if (t < 0.33) {
-                    x = canvas.width / 2 + (t / 0.33 - 1) * canvas.width * 0.25;
-                } else if (t < 0.66) {
-                    x = canvas.width / 2 - canvas.width * 0.25 + ((t - 0.33) / 0.33) * canvas.width * 0.5;
+                
+                if (y_percent < 0.33) {
+                    x = canvas.width / 2 - 100;
+                } else if (y_percent < 0.66) {
+                    x = canvas.width / 2 + 100;
                 } else {
-                    x = canvas.width / 2 + canvas.width * 0.25 - ((t - 0.66) / 0.34) * canvas.width * 0.25;
+                    x = canvas.width / 2 - 100;
                 }
                 return { x, y };
             }
         };
         
-        function drawLine() {
+        function drawBlackLine() {
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
@@ -114,18 +115,14 @@
             ctx.lineWidth = 50;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            
             ctx.beginPath();
             
-            let trackFunc = trackType === 0 ? tracks.straight : 
-                           trackType === 1 ? tracks.curves : 
-                           tracks.zigzag;
+            const pathFunc = paths[currentTrack];
+            const startPos = pathFunc(0);
+            ctx.moveTo(startPos.x, startPos.y);
             
-            const pos = trackFunc(0);
-            ctx.moveTo(pos.x, pos.y);
-            
-            for (let t = 0; t <= 1; t += 0.01) {
-                const pos = trackFunc(t);
+            for (let i = 0; i <= 1; i += 0.01) {
+                const pos = pathFunc(i);
                 ctx.lineTo(pos.x, pos.y);
             }
             
@@ -133,31 +130,28 @@
         }
         
         function drawDot() {
-            let trackFunc = trackType === 0 ? tracks.straight : 
-                           trackType === 1 ? tracks.curves : 
-                           tracks.zigzag;
-            
-            const pos = trackFunc(dotPosition);
+            const pathFunc = paths[currentTrack];
+            const pos = pathFunc(progress);
             
             ctx.fillStyle = '#FF6B35';
             ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 15, 0, Math.PI * 2);
+            ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2);
             ctx.fill();
             
             ctx.fillStyle = 'white';
             ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
+            ctx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
             ctx.fill();
         }
         
         function animate() {
-            drawLine();
+            drawBlackLine();
             drawDot();
             
             if (isRunning) {
-                dotPosition += 0.003;
-                if (dotPosition > 1) {
-                    dotPosition = 0;
+                progress += 0.005;
+                if (progress > 1) {
+                    progress = 0;
                 }
             }
             
@@ -170,11 +164,11 @@
         
         function resetSimulation() {
             isRunning = false;
-            dotPosition = 0;
+            progress = 0;
         }
         
-        function changeTrack(type) {
-            trackType = type;
+        function setupTrack(trackName) {
+            currentTrack = trackName;
             resetSimulation();
         }
         
